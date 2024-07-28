@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="card-container">
+    <div class="card">
+        <h2>Your Rated Books</h2>
+        <ul>
+            {% for book in user_rated_books %}
+            <li>{{ book.title }} by {{ book.author }} - Rating: {{ book.rating }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+    <div class="card">
+        <h2>Recommended for You</h2>
+        <div class="book-cards">
+            {% for book in recommended_books %}
+            <div class="book-card">
+                <h3>{{ book.title }}</h3>
+                <p>{{ book.author }}</p>
+                <a href="{{ url_for('book', title=book.title) }}">Rate this book</a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+<!--<a href="{{ url_for('explore') }}">Explore More Books</a>-->
+{% endblock %}
