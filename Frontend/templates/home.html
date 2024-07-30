@@ -2,14 +2,16 @@
 
 {% block content %}
 <section class="card-container">
-    <div class="card">
-        <h2>Your Rated Books</h2>
+<div class="card">
+    <h2>Your Rated Books</h2>
+    <div class="books-container">
         <ul>
             {% for book in user_rated_books %}
             <li>{{ book.title }} by {{ book.author }} - Rating: {{ book.rating }}</li>
             {% endfor %}
         </ul>
     </div>
+</div>
     <div class="card">
         <h2>Recommended for You</h2>
         <div class="book-cards">

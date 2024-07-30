@@ -6,7 +6,7 @@ from pyspark.ml.recommendation import ALSModel
 from pymongo import MongoClient
 import math
 
-from load_model import spark, als_model, id_to_user_index  # Importing Spark and ALS model
+# from load_model import spark, als_model, id_to_user_index, update_user_recommendations  # Importing Spark and ALS model
 
 
 app = Flask(__name__)
@@ -33,25 +33,13 @@ def user_home(user_id):
 
     user['_id'] = str(user['_id'])
     user_rated_books = user.get('rated_books', [])
-    user_index = id_to_user_index.get(user_id)
-    if user_index is None:
-        return jsonify({"error": f"User with user_id {user_id} not found in the model"}), 404
-
-    try:
-        user_recommendations = als_model.recommendForUserSubset(spark.createDataFrame([{'UserIdIndex': user_index}]), 10)
-        recommended_books = user_recommendations.collect()[0]['recommendations']
-        recommended_books_ids = [rec[0] for rec in recommended_books]
-
-        recommended_books_details = list(books_data_collection.find({'Id': {'$in': recommended_books_ids}}))
-        for book in recommended_books_details:
-            book['_id'] = str(book['_id'])
-    except IndexError as e:
-        recommended_books_details = []
+    recommended_books_details = user.get('recommended_books', [])
 
     return jsonify({
         "rated_books": user_rated_books,
         "recommended_books": recommended_books_details
     })
+
 
 @app.route('/explore')
 def explore_books():
@@ -80,12 +68,12 @@ def get_book(title):
     if book:
         if request.method == 'POST':
             rating = request.form.get('rating')
-            review = request.form.get('review')
+            # review = request.form.get('review')
             user_id = request.form.get('user_id')
             # Save rating and review to the database
             users_collection.update_one(
                 {"user_id": user_id},
-                {"$push": {"rated_books": {"book_id": book['book_id'], "rating": rating, "review": review}}}
+                {"$push": {"rated_books": {"book_id": book['book_id'], "rating": rating}}}
             )
             return redirect(url_for('user_home', user_id=user_id))
         return jsonify(book)

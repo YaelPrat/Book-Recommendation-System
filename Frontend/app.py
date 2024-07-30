@@ -15,6 +15,8 @@ def home():
         data = response.json()
         user_rated_books = data['rated_books']
         recommended_books = data['recommended_books']
+        recommended_books = recommended_books[:4]
+
         print(recommended_books)
         return render_template('home.html', user_rated_books=user_rated_books, recommended_books=recommended_books)
     else:
@@ -35,6 +37,8 @@ def explore():
     else:
         return "Failed to load explore data", response.status_code
 
+
+
 #TODO: Add review field
 #TODO : save the data in the backend
 @app.route('/book/<title>', methods=['GET', 'POST'])
@@ -42,8 +46,8 @@ def book(title):
     if request.method == 'POST':
         user_id = 'a1n1yemti9dj86'  # Example user_id; this should be fetched from session or request in a real app
         rating = request.form.get('rating')
-        review = request.form.get('review')
-        response = requests.post(f'{API_URL}/user/{user_id}/rate', json={'title': title, 'rating': rating, 'review': review})
+        # review = request.form.get('review')
+        response = requests.post(f'{API_URL}/user/{user_id}/rate', json={'title': title, 'rating': rating})
         if response.status_code == 200:
             return redirect(url_for('home'))
         else:
