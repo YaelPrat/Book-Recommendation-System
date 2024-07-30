@@ -44,7 +44,7 @@ def user_home(user_id):
 @app.route('/explore')
 def explore_books():
     books = list(books_data_collection.find().limit(20))
-    books = [clean_book_data(book) for book in books]
+    # books = [clean_book_data(book) for book in books]
     # Convert ObjectId to string
     for book in books:
         if '_id' in book:
