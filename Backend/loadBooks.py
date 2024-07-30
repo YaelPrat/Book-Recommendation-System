@@ -1,5 +1,8 @@
 from pymongo import MongoClient
 import pandas as pd
+from flask import url_for
+import math
+
 
 # Load your books data
 books_df = pd.read_csv('books_data.csv')
@@ -41,3 +44,22 @@ db = client['book_recommendation']
 # Insert books data into MongoDB
 books_collection = db['books_data']
 books_collection.insert_many(books_df.to_dict('records'))
+
+
+# TODO Add the clean data to the process
+
+def clean_book_data(book):
+    # Handle None or NaN values and empty lists
+    for key, value in book.items():
+        if value is None or (isinstance(value, float) and math.isnan(value)):
+            if key in ['authors', 'categories', 'description', 'publisher']:
+                book[key] = 'Unknown' if key != 'description' else 'No description available'
+            elif key == 'image':
+                book[key] = url_for('static', filename='default_book_cover.jpg')
+            elif key == 'ratingsCount':
+                book[key] = 'Not rated'
+            elif key == 'publishedDate':
+                book[key] = 'Unknown'
+        elif isinstance(value, list) and not value:
+            book[key] = 'Unknown'
+    return book

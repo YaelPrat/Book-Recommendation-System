@@ -1,10 +1,11 @@
 from flask import Flask, request, jsonify, redirect, url_for, render_template
-import os
 import json
 from flask import Flask, jsonify, render_template
 from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALSModel
 from pymongo import MongoClient
+import math
+
 
 app = Flask(__name__)
 
@@ -40,7 +41,7 @@ def user_home(user_id):
     if not user:
         return jsonify({"error": f"User with user_id {user_id} not found"}), 404
 
-    print("user", user)
+    # print("user", user)
     # Convert ObjectId to string for JSON serialization
     user['_id'] = str(user['_id'])
 
@@ -56,19 +57,19 @@ def user_home(user_id):
     # Generate recommendations for the user
     try:
         # Print the user index for debugging
-        print(f"User index: {user_index}")
+        # print(f"User index: {user_index}")
 
         user_recommendations = als_model.recommendForUserSubset(spark.createDataFrame([{'UserIdIndex': user_index}]), 10)
 
         # Print the raw recommendations for debugging
-        print(f"User recommendations: {user_recommendations.collect()}")
+        # print(f"User recommendations: {user_recommendations.collect()}")
 
         # Extract the recommended book indices
         recommended_books = user_recommendations.collect()[0]['recommendations']
         recommended_books_ids = [rec[0] for rec in recommended_books]  # Extract the first element (book index) from each recommendation
 
         # Print the recommended book IDs for debugging
-        print(f"Recommended book IDs: {recommended_books_ids}")
+        # print(f"Recommended book IDs: {recommended_books_ids}")
 
         # Fetch book details from MongoDB
         recommended_books_details = list(books_data_collection.find({'Id': {'$in': recommended_books_ids}}))
@@ -77,8 +78,8 @@ def user_home(user_id):
             book['_id'] = str(book['_id'])
 
 
-        # Print the recommended book details for debugging
-        print(f"Recommended book details: {recommended_books_details}")
+        # # Print the recommended book details for debugging
+        # print(f"Recommended book details: {recommended_books_details}")
     except IndexError as e:
         print(f"IndexError: {e}")
         recommended_books_details = []
@@ -91,9 +92,23 @@ def user_home(user_id):
 
 @app.route('/explore')
 def explore_books():
-    books = list(books_collection.find().limit(20))
+    books = list(books_data_collection.find().limit(20))
+    books = [clean_book_data(book) for book in books]
+    # Convert ObjectId to string
+    for book in books:
+        if '_id' in book:
+            book['_id'] = str(book['_id'])
+
     return jsonify(books)
 
+
+def clean_book_data(book):
+    for key, value in book.items():
+        if isinstance(value, float) and math.isnan(value):
+            book[key] = None
+        elif value == 'nan':
+            book[key] = None
+    return book
 
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def get_book(title):

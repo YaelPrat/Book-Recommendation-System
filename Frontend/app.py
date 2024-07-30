@@ -3,26 +3,10 @@ import requests
 
 app = Flask(__name__)
 
-# Simulated data
-user_rated_books = [
-    {"title": "Book 1", "author": "Author 1", "rating": 5},
-    {"title": "Book 2", "author": "Author 2", "rating": 4}
-]
 
-recommended_books = [
-    {"title": "Book 3", "author": "Author 3"},
-    {"title": "Book 4", "author": "Author 4"}
-]
 
-all_books = [
-    {"title": "Book 1", "author": "Author 1"},
-    {"title": "Book 2", "author": "Author 2"},
-    {"title": "Book 3", "author": "Author 3"},
-    {"title": "Book 4", "author": "Author 4"}
-]
 API_URL = 'http://localhost:5001'
 
-# TODO : load the data from the DB & predict from the model
 @app.route('/')
 def home():
     user_id = 'a1n1yemti9dj86'  # Example user_id; this should be fetched from session or request in a real app
@@ -46,10 +30,10 @@ def explore():
     response = requests.get(f'{API_URL}/explore')
     if response.status_code == 200:
         books = response.json()
+        # print(books)
         return render_template('explore.html', books=books)
     else:
-        return "Failed to load data", response.status_code
-
+        return "Failed to load explore data", response.status_code
 
 #TODO: Add review field
 #TODO : save the data in the backend
