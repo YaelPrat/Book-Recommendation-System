@@ -6,83 +6,52 @@ from pyspark.ml.recommendation import ALSModel
 from pymongo import MongoClient
 import math
 
+from load_model import spark, als_model, id_to_user_index  # Importing Spark and ALS model
+
 
 app = Flask(__name__)
 
-# Initialize Spark session
-spark = SparkSession.builder.appName("BookRecommendationApp").getOrCreate()
 
-# Load ALS model
-model_path = "als_model"
-als_model = ALSModel.load(model_path)
-
-# Load user_id to UserIdIndex mapping
-with open('id_to_user_index.json', 'r') as f:
-    id_to_user_index = json.load(f)
+# # Load user_id to UserIdIndex mapping
+# with open('id_to_user_index.json', 'r') as f:
+#     id_to_user_index = json.load(f)
 
 # Connect to MongoDB
 client = MongoClient('mongodb://localhost:27017/')
 db = client['book_recommendation']
-books_collection = db['books_rate']
+rating_collection = db['books_rate']
 users_collection = db['users']
 books_data_collection = db['books_data']
 
 
+
 @app.route('/user/<user_id>/home')
 def user_home(user_id):
-    # print("inside user-home")
     user = users_collection.find_one({'user_id': user_id})
     if not user:
         return jsonify({"error": f"User with user_id {user_id} not found"}), 404
 
-    # print("user", user)
-    # Convert ObjectId to string for JSON serialization
     user['_id'] = str(user['_id'])
-
-    # Get user rated books
-    user_rated_books = user['rated_books']
-    # user_rated_books = user.get('rated_books', [])
-
-    # Find the user index
+    user_rated_books = user.get('rated_books', [])
     user_index = id_to_user_index.get(user_id)
     if user_index is None:
         return jsonify({"error": f"User with user_id {user_id} not found in the model"}), 404
 
-    # Generate recommendations for the user
     try:
-        # Print the user index for debugging
-        # print(f"User index: {user_index}")
-
         user_recommendations = als_model.recommendForUserSubset(spark.createDataFrame([{'UserIdIndex': user_index}]), 10)
-
-        # Print the raw recommendations for debugging
-        # print(f"User recommendations: {user_recommendations.collect()}")
-
-        # Extract the recommended book indices
         recommended_books = user_recommendations.collect()[0]['recommendations']
-        recommended_books_ids = [rec[0] for rec in recommended_books]  # Extract the first element (book index) from each recommendation
+        recommended_books_ids = [rec[0] for rec in recommended_books]
 
-        # Print the recommended book IDs for debugging
-        # print(f"Recommended book IDs: {recommended_books_ids}")
-
-        # Fetch book details from MongoDB
         recommended_books_details = list(books_data_collection.find({'Id': {'$in': recommended_books_ids}}))
-        # Serialize ObjectId and other fields if necessary
         for book in recommended_books_details:
             book['_id'] = str(book['_id'])
-
-
-        # # Print the recommended book details for debugging
-        # print(f"Recommended book details: {recommended_books_details}")
     except IndexError as e:
-        print(f"IndexError: {e}")
         recommended_books_details = []
 
     return jsonify({
         "rated_books": user_rated_books,
         "recommended_books": recommended_books_details
     })
-
 
 @app.route('/explore')
 def explore_books():
@@ -103,6 +72,7 @@ def clean_book_data(book):
         elif value == 'nan':
             book[key] = None
     return book
+
 
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def get_book(title):
