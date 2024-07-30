@@ -28,12 +28,6 @@ users_collection = db['users']
 books_data_collection = db['books_data']
 
 
-# book_ids_to_check = [1396, 709, 1035, 1357, 1409, 1370, 1401, 392, 1340, 588]
-#
-# for book_id in book_ids_to_check:
-#     book = books_collection.find_one({'book_id': book_id})
-#     print(f"Book ID: {book_id}, Book: {book}")
-
 @app.route('/user/<user_id>/home')
 def user_home(user_id):
     # print("inside user-home")
@@ -112,7 +106,7 @@ def clean_book_data(book):
 
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def get_book(title):
-    book = books_collection.find_one({"title": title})
+    book = books_data_collection.find_one({"title": title})
     if book:
         if request.method == 'POST':
             rating = request.form.get('rating')

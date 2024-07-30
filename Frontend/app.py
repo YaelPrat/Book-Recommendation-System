@@ -40,7 +40,7 @@ def explore():
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def book(title):
     if request.method == 'POST':
-        user_id = 'user1'  # Example user_id; this should be fetched from session or request in a real app
+        user_id = 'a1n1yemti9dj86'  # Example user_id; this should be fetched from session or request in a real app
         rating = request.form.get('rating')
         review = request.form.get('review')
         response = requests.post(f'{API_URL}/user/{user_id}/rate', json={'title': title, 'rating': rating, 'review': review})
