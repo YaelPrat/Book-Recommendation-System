@@ -2,8 +2,16 @@
 
 {% block content %}
 <section>
-    <h2>{{ book.title }}</h2>
-    <p>by {{ book.author }}</p>
+               <h3>{{ book.Title }}</h3>
+                <p>Authors: {{ book.authors if book.authors else 'Unknown' }}</p>
+                <p>Categories: {{ book.categories if book.categories else 'Uncategorized' }}</p>
+                <p>Published Date: {{ book.publishedDate if book.publishedDate else 'Unknown' }}</p>
+                <img src="{{ book.image if book.image else url_for('static', filename='default_book_cover.jpg') }}" alt="{{ book.Title }} cover">
+                <p>Description: {{ book.description if book.description else 'No description available' }}</p>
+                <p>Publisher: {{ book.publisher if book.publisher else 'Unknown' }}</p>
+                <p>Ratings Count: {{ book.ratingsCount if book.ratingsCount else 'Not rated' }}</p>
+                <a href="{{ book.infoLink }}" target="_blank">More Info</a>
+                <a href="{{ book.previewLink }}" target="_blank">Preview</a>
     <form method="post">
         <label for="rating">Rate this book:</label>
         <input type="number" id="rating" name="rating" min="1" max="5" required>

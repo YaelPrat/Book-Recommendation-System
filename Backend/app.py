@@ -5,6 +5,7 @@ from pyspark.sql import SparkSession
 from pyspark.ml.recommendation import ALSModel
 from pymongo import MongoClient
 import math
+from bson import ObjectId
 
 # from load_model import spark, als_model, id_to_user_index, update_user_recommendations  # Importing Spark and ALS model
 
@@ -62,21 +63,34 @@ def clean_book_data(book):
     return book
 
 
-@app.route('/book/<title>', methods=['GET', 'POST'])
+@app.route('/book/<title>', methods=['GET'])
 def get_book(title):
-    book = books_data_collection.find_one({"title": title})
+    book = books_data_collection.find_one({"Title": title})
     if book:
-        if request.method == 'POST':
-            rating = request.form.get('rating')
-            # review = request.form.get('review')
-            user_id = request.form.get('user_id')
-            # Save rating and review to the database
-            users_collection.update_one(
-                {"user_id": user_id},
-                {"$push": {"rated_books": {"book_id": book['book_id'], "rating": rating}}}
-            )
-            return redirect(url_for('user_home', user_id=user_id))
+        book['_id'] = str(book['_id'])  # Convert ObjectId to string
         return jsonify(book)
+    else:
+        return jsonify({'error': 'Book not found'}), 404
+
+@app.route('/user/<user_id>/rate', methods=['POST'])
+def rate_book(user_id):
+    data = request.get_json()
+    title = data['title']
+    rating = data['rating']
+    book = books_data_collection.find_one({"Title": title})
+
+    if book:
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$push": {
+                "rated_books": {
+                    "book_id": book['Id'],
+                    "title": book['Title'],
+                    "rating": rating
+                }
+            }}
+        )
+        return jsonify({'message': 'Rating saved successfully'}), 200
     else:
         return jsonify({'error': 'Book not found'}), 404
 
