@@ -90,7 +90,16 @@ def rate_book(user_id):
                 }
             }}
         )
+        users_collection.update_one(
+            {"user_id": user_id},
+            {"$pull": {
+                "recommended_books": {
+                    "Id": book['Id']
+                }
+            }}
+        )
         return jsonify({'message': 'Rating saved successfully'}), 200
+    #TODO Add Event so the model will learn
     else:
         return jsonify({'error': 'Book not found'}), 404
 

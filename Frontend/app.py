@@ -39,8 +39,6 @@ def explore():
 
 
 
-#TODO: Add review field
-#TODO : save the data in the backend
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def book(title):
     if request.method == 'POST':
