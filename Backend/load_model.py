@@ -54,5 +54,4 @@ def update_user_recommendations():
 # Call the function to update recommendations
 update_user_recommendations()
 
-# Exporting the spark session, als_model, and id_to_user_index
-__all__ = ['spark', 'als_model', 'id_to_user_index']
+spark.stop()

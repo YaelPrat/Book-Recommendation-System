@@ -2,9 +2,9 @@ from pymongo import MongoClient
 
 # Connect to MongoDB
 client = MongoClient('localhost', 27017)
-db = client['book_recommendation']  # Replace with your database name
-books_collection = db['books_rate']  # Replace with your books collection name
-users_collection = db['users']  # Replace with your users collection name
+db = client['book_recommendation']
+books_collection = db['books_rate']
+users_collection = db['users']
 # users_collection.create_index('user_id')
 
 

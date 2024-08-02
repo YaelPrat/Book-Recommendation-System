@@ -3,13 +3,12 @@ import requests
 
 app = Flask(__name__)
 
-
-
 API_URL = 'http://localhost:5001'
+
 
 @app.route('/')
 def home():
-    user_id = 'a1n1yemti9dj86'  # Example user_id; this should be fetched from session or request in a real app
+    user_id = 'a1n1yemti9dj86'  # Example user_id;
     response = requests.get(f'{API_URL}/user/{user_id}/home')
     if response.status_code == 200:
         data = response.json()
@@ -21,28 +20,26 @@ def home():
         return render_template('home.html', user_rated_books=user_rated_books, recommended_books=recommended_books)
     else:
         return "Failed to load data", response.status_code
-    # return render_template('home.html', user_rated_books=user_rated_books, recommended_books=recommended_books)
 
-#TODO : Search? dispaly by ganere? display by recommended to the user?
+
+# TODO : Search? display by ganere? display by recommended to the user?
 # TODO :  How many to load each time? and how to handle it
-# TODO: load the data from the DB
+
+
 @app.route('/explore')
 def explore():
-    # return render_template('explore.html', books=all_books)
     response = requests.get(f'{API_URL}/explore')
     if response.status_code == 200:
         books = response.json()
-        # print(books)
         return render_template('explore.html', books=books)
     else:
         return "Failed to load explore data", response.status_code
 
 
-
 @app.route('/book/<title>', methods=['GET', 'POST'])
 def book(title):
     if request.method == 'POST':
-        user_id = 'a1n1yemti9dj86'  # This would typically come from the session or user input
+        user_id = 'a1n1yemti9dj86'
         rating = request.form.get('rating')
         response = requests.post(f'{API_URL}/user/{user_id}/rate', json={'title': title, 'rating': rating})
         if response.status_code == 200:
