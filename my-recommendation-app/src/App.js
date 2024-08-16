@@ -18,6 +18,8 @@ const App = () => {
           <Route path="/user/:userId/home" element={<Home userId={userId} />} />
           <Route path="/user/:userId/explore" element={<Explore userId={userId} />} />
           <Route path="/user/:userId/book/:title" element={<Book userId={userId} />} />
+          {/* Now the Explore component will handle search results as well */}
+          <Route path="/search" element={<Explore userId={userId} />} />
         </Routes>
       </div>
     </Router>

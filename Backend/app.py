@@ -4,11 +4,14 @@ from confluent_kafka import Producer, Consumer, KafkaException
 import json
 from threading import Thread
 import subprocess
-from confluent_kafka import Producer
 import json
+from flask_cors import CORS
+from bson.json_util import dumps
+
+
 
 app = Flask(__name__)
-
+CORS(app)
 
 # Connect to MongoDB
 client = MongoClient('mongodb://localhost:27017/')
@@ -166,8 +169,32 @@ def rate_book(user_id):
     else:
         return jsonify({'error': 'Book not found'}), 404
 
-#Test the retraned model
 
+@app.route('/search', methods=['GET'])
+def search_books():
+    try:
+        query = request.args.get('query', '')
+        search_results_cursor = books_data_collection.find({
+            "$or": [
+                {"Title": {"$regex": query, "$options": "i"}},
+                {"authors": {"$regex": query, "$options": "i"}}
+            ]
+        }).limit(20)
+
+        # Convert cursor to a list and remove duplicates
+        search_results = []
+        seen_ids = set()
+
+        for book in search_results_cursor:
+            book_id = str(book['_id'])
+            if book_id not in seen_ids:
+                seen_ids.add(book_id)
+                search_results.append(book)
+
+        return dumps(search_results)
+    except Exception as e:
+        print(f"Error during search: {str(e)}")
+        return jsonify({"error": "Internal Server Error", "message": str(e)}), 500
 
 
 if __name__ == '__main__':
