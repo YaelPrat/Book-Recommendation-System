@@ -3,7 +3,9 @@ from pymongo import MongoClient
 from confluent_kafka import Producer, Consumer, KafkaException
 import json
 from threading import Thread
-
+import subprocess
+from confluent_kafka import Producer
+import json
 
 app = Flask(__name__)
 
@@ -17,20 +19,20 @@ books_data_collection = db['books_data']
 
 
 # Kafka
+RATING_THRESHOLD = 5
+rating_count = 0
 
-from confluent_kafka import Producer
-import json
+
 
 # Configure the producer
 producer = Producer({'bootstrap.servers': 'localhost:29092'})
 
 def delivery_report(err, msg):
-    """ Called once for each message produced to indicate delivery result.
-        Triggered by poll() or flush(). """
+
     if err is not None:
-        print('Message delivery failed: {}'.format(err))
+        print('Producer-Message delivery failed: {}'.format(err))
     else:
-        print('Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
+        print('Producer-Message delivered to {} [{}]'.format(msg.topic(), msg.partition()))
 
 def log_user_action(user_id, action):
     data = {'user_id': user_id, 'action': action}
@@ -48,25 +50,49 @@ consumer = Consumer({
 
 consumer.subscribe(['user-actions'])
 
+
 def process_user_actions():
+    global rating_count
     while True:
         msg = consumer.poll(1.0)  # Timeout of 1 second
         if msg is None:
             continue
         if msg.error():
             raise KafkaException(msg.error())
-        # Otherwise, we have a proper message
-        print('Received message: {}'.format(msg.value().decode('utf-8')))
+
+        # Parse the message
+        print('Consumer-Received message: {}'.format(msg.value().decode('utf-8')))
         data = json.loads(msg.value().decode('utf-8'))
-        # Implement your processing logic here
+        user_id = data['user_id']
+        action = data['action']
+
+        # Increment the rating counter when a rating action is logged
+        if action == "rated_book":
+            rating_count += 1
+            print(f"Consumer-Rating count is now {rating_count}")
+
+        # Check if the threshold has been reached
+        if rating_count >= RATING_THRESHOLD:
+            # Trigger retrainModel.py
+            print("Consumer-Threshold reached, retraining model...")
+            subprocess.run(["python", "retrainModel.py"])
+            print("Consumer-Model retraining complete.")
+
+            # Trigger loadModel.py to load the new recommendations
+            print("Consumer-Loading new recommendations...")
+            subprocess.run(["python", "loadModel.py"])
+            print("Consumer-Recommendations loaded.")
+
+            # Reset the rating count
+            rating_count = 0
 def run_consumer():
     process_user_actions()
-@app.route('/test-action', methods=['POST'])
-def test_action():
-    user_id = request.json['user_id']
-    action = request.json['action']
-    log_user_action(user_id, action)
-    return jsonify({"status": "action logged"}), 200
+# @app.route('/test-action', methods=['POST'])
+# def test_action():
+#     user_id = request.json['user_id']
+#     action = request.json['action']
+#     log_user_action(user_id, action)
+#     return jsonify({"status": "action logged"}), 200
 
 # API
 @app.route('/user/<user_id>/home')
@@ -121,7 +147,6 @@ def rate_book(user_id):
                     "title": book['Title'],
                     "rating": rating,
                     "new_rating": True,  # Flag indicating the rating is new and unprocessed
-
                 }
             }}
         )
@@ -133,12 +158,13 @@ def rate_book(user_id):
                 }
             }}
         )
+
+        # Log the rating action to Kafka
+        log_user_action(user_id, "rated_book")
+
         return jsonify({'message': 'Rating saved successfully'}), 200
-    #TODO Add Event so the model will learn
     else:
         return jsonify({'error': 'Book not found'}), 404
-
-
 
 #Test the retraned model
 
